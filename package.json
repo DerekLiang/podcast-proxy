@@ -13,8 +13,10 @@
     "http-proxy-middleware": "^2.0.6"
   },
   "devDependencies": {
+    "html-entities": "^2.3.3",
     "log4js": "^6.5.2",
-    "nodemon": "^2.0.16"
+    "nodemon": "^2.0.16",
+    "sha1": "^1.1.1"
   },
   "nodemonConfig": {
     "ignore": [
