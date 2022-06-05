@@ -3,14 +3,14 @@ const htmlEntity = require('html-entities');
 const path = require('path');
 const fs = require('fs');
 const sha1 = require('sha1');
- 
+const contentRange = require('content-range');
+
 const app = express();
 
 const publicPath = path.join(__dirname, 'public');
 
 const { createProxyMiddleware, responseInterceptor } = require('http-proxy-middleware');
 const config = require('../config');
-const { hostname } = require('os');
 
 const cachedUrls = {};
 
@@ -36,7 +36,7 @@ const replaceUrls = (xml) => {
 
   let logCount = 10;
   const result = xml.replace(regex, (match, hostName, originalUrl) => {
-    const { hash, extension, fileName } = getHashFileInfo(hostname, originalUrl);
+    const { hash, extension, fileName } = getHashFileInfo(hostName, originalUrl);
 
     const cachedUrl =  cachedUrls[hash];
     if (cachedUrl) return cachedUrl;
@@ -84,6 +84,12 @@ const getHostUrlFromRul = (url, defaultUrl) => {
   return defaultUrl;
 }
 
+const writeResponseRange = (fileName, buffer, ranges /* in format of 'bytes 21010-47021/47022' */) => {
+  const {start, end, size } = contentRange.parse(ranges);
+  fs.writeFileSync(fileName, buffer, start);
+  return (end + 1) === size;
+}
+
 const proxy = createProxyMiddleware({
   target: config.podcast.host, 
   changeOrigin: true,
@@ -108,12 +114,17 @@ const proxy = createProxyMiddleware({
 
     const { hash, fileName } = getHashFileInfo(proxyRes.req.host, req.url);
 
-    fs.writeFileSync(fileName, responseBuffer, );
+    let writeToTheEnd = true;
+    console.log('onProxyRes url not matched', proxyRes.req.host, req.url);
+    if (proxyRes.statusCode == 206) {
+      writeToTheEnd = writeResponseRange(fileName, responseBuffer, proxyRes.headers['content-range']);
+      console.log(`  ${writeToTheEnd ? 'completed' : 'partial'} write to cache ${fileName} size ${responseBuffer.length}`);    
+    } else {
+      console.log(`  write to cache ${fileName} size ${responseBuffer.length}`);    
+      fs.writeFileSync(fileName, responseBuffer, );
+    }
     
-    console.log('onProxyRes url not matched', proxy.req.host, req.url);
-    console.log('  write to cache', fileName);
-    
-    delete cachedUrls[hash];
+    if (writeToTheEnd) delete cachedUrls[hash];    
 
     return responseBuffer;
   }),
@@ -148,6 +159,8 @@ const proxy = createProxyMiddleware({
   }
 }); 
  
+console.log('current version', process.version);
+
 app.use('/static', express.static(publicPath));
 
 app.use('/', proxy);
