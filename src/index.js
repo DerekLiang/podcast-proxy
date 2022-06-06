@@ -7,7 +7,7 @@ const contentRange = require('content-range');
 
 const app = express();
 
-const publicPath = path.join(__dirname, 'public');
+const publicPath = path.join(__dirname, 'public_download');
 
 const { createProxyMiddleware, responseInterceptor } = require('http-proxy-middleware');
 const config = require('../config');
@@ -161,7 +161,15 @@ const proxy = createProxyMiddleware({
  
 console.log('current version', process.version);
 
-app.use('/static', express.static(publicPath));
+function setCustomCacheControl (res, path) {
+  if (path.match(/[.]rss/)) {
+    console.log('set index rss header')
+    res.setHeader('content-type', 'application/rss+xml; charset=utf-8');
+  }
+}
 
-app.use('/', proxy);
+app.use('/static', express.static(publicPath, { index: ['index.rss.bak', 'index.rss'], setHeaders: setCustomCacheControl }));
+app.use(`${config.secret}`, express.static(publicPath, { index: ['index.rss.bak', 'index.rss'], setHeaders: setCustomCacheControl }));
+
+
 app.listen(3000, '0.0.0.0');

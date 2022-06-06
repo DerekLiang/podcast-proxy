@@ -1,0 +1,103 @@
+const { readFile, readFileSync, writeFileSync, existsSync } = require('fs');
+const path = require('path');
+const config = require("../config");
+const util = require("./util");
+console.log("config:", config);
+const htmlEntity = require('html-entities');
+const alot = require('alot');
+const sha1 = require('sha1');
+
+const publicPath = path.join(__dirname, config.public_folder);
+
+const index_rss_filename = path.join(publicPath, 'index.rss');
+
+async function main()
+{
+    // await util.downloadAsync(config.podcast.host + config.podcast.url, index_rss_filename);
+
+    const rssContent = readFileSync(index_rss_filename, { encoding: 'utf-8'});
+
+    console.log('rss content:', rssContent.substring(0,550));
+
+    const rssContentProcessed = await processRssAsync(rssContent);
+
+    const replacedContent = (config.podcast.replaceTexts || []).reduce((acc, {from, to}) => acc.replace(from, to), rssContentProcessed);
+
+    writeFileSync(index_rss_filename + '.bak', replacedContent, { encoding: 'utf-8'});
+}
+
+main()
+
+async function processRssAsync(rssContent) {
+    const regex = /(https:\/\/[^\/]*\/[^<"]*)/gm;
+
+    let urls = [];
+
+    // first path gather all the URLs 
+    rssContent.replace(regex, (match, url) => {
+        try {
+            urls.push(url);
+            return match;
+        } catch {
+            console.error('error replacing RSS feed content');
+            return match;
+        }
+    });
+
+    // download the content
+    const downloadInfo = await alot(urls)
+        .distinct()
+        .filter(url => url.indexOf('.mp3?') >=0)
+        .take(50)
+        .mapAsync(async (url, index) => {
+            console.log(`${index}-prepare downloading (${url})`);
+
+            const fileName = sha1(url+config.secret) + '.mp3';
+            const fullLocalPathFileName = path.join(publicPath, fileName) ;
+
+            const skip = existsSync(fullLocalPathFileName);
+            if (skip) {
+                console.log(`  ${index}-skipping ${fullLocalPathFileName}`)
+            } else {
+                console.log(`  ${index}-downloading (${fullLocalPathFileName})...`)
+                await util.downloadAsync(htmlEntity.decode(url), fullLocalPathFileName);
+                //      optional: if mp3 thrink to phone:mono with lame
+            }            
+
+            return { url, localUrl: `${config.public_host_name}/static/${fileName}`, skip };
+        })
+        .toArrayAsync({threads: 2, errors: 'ignore'});
+    
+    const errors = downloadInfo.filter(info => info instanceof Error );
+    if (errors.length) {
+        console.error(`there are errors occurred while processing URLs. Totoal error ${errors.length}/${downloadInfo.length}`);
+        errors.forEach(err => {
+            console.error(err);
+        })
+        console.error('--- end of error list ----');        
+    } else {
+        console.log(`processing URLs successfully. Total is: ${downloadInfo.length}`);
+    }
+
+    // for fast lookup
+    const urlToActualUrlMap = alot(downloadInfo)
+        .filter(info => !(info instanceof Error ))
+        .toDictionary(urlInfo => urlInfo.url, urlInfo => urlInfo.localUrl);
+        
+    // replace with the actual url
+    const result = rssContent.replace(regex, (match, url) => {
+        return urlToActualUrlMap[url] || url;
+    });
+    return result;
+}
+
+// download the main index file of the podcast 
+
+// parse the content of the index file
+
+// for each url: 
+//      download url to the public file
+
+//      update the index file
+
+// save the index

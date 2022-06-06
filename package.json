@@ -13,6 +13,7 @@
     "http-proxy-middleware": "^2.0.6"
   },
   "devDependencies": {
+    "alot": "^0.3.0",
     "content-range": "^2.0.2",
     "html-entities": "^2.3.3",
     "log4js": "^6.5.2",
