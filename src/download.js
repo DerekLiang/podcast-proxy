@@ -13,7 +13,7 @@ const index_rss_filename = path.join(publicPath, 'index.rss');
 
 async function main()
 {
-    // await util.downloadAsync(config.podcast.host + config.podcast.url, index_rss_filename);
+    await util.downloadAsync(config.podcast.host + config.podcast.url, index_rss_filename);
 
     const rssContent = readFileSync(index_rss_filename, { encoding: 'utf-8'});
 
@@ -48,25 +48,31 @@ async function processRssAsync(rssContent) {
     const downloadInfo = await alot(urls)
         .distinct()
         .filter(url => url.indexOf('.mp3?') >=0)
-        .take(50)
-        .mapAsync(async (url, index) => {
-            console.log(`${index}-prepare downloading (${url})`);
-
+        .map((url, index) => { 
             const fileName = sha1(url+config.secret) + '.mp3';
             const fullLocalPathFileName = path.join(publicPath, fileName) ;
-
-            const skip = existsSync(fullLocalPathFileName);
-            if (skip) {
-                console.log(`  ${index}-skipping ${fullLocalPathFileName}`)
-            } else {
-                console.log(`  ${index}-downloading (${fullLocalPathFileName})...`)
-                await util.downloadAsync(htmlEntity.decode(url), fullLocalPathFileName);
-                //      optional: if mp3 thrink to phone:mono with lame
-            }            
-
-            return { url, localUrl: `${config.public_host_name}/static/${fileName}`, skip };
+            console.log(`${index}-prepare downloading (${url})`);
+            return {url, fullLocalPathFileName, fileName };
         })
-        .toArrayAsync({threads: 2, errors: 'ignore'});
+        .take(5)
+        .mapAsync(async ({url, fileName, fullLocalPathFileName}, index) => {
+
+            if (existsSync(fullLocalPathFileName)) {
+                console.log(`  ${index}-skip downloading ${fullLocalPathFileName}`);
+            } else {
+                console.log(`  ${index}-downloading (${fullLocalPathFileName})...`);
+                await util.downloadAsync(htmlEntity.decode(url), fullLocalPathFileName);                
+            }            
+            if (!existsSync(util.toCompressedAudioFileName(fullLocalPathFileName))) {           
+                console.log(`  ${index}-compressing audio (${fullLocalPathFileName})...`);
+                await util.compressAudioAsync(fullLocalPathFileName);
+            }
+            
+            const result = { url, localUrl: `${config.public_host_name}${config.secret}/${util.toCompressedAudioFileName(fileName)}` };
+            console.log(`  ${index}-result is (${result.localUrl})...`);          
+            return result;
+        })
+        .toArrayAsync({threads: 5, errors: 'ignore'});
     
     const errors = downloadInfo.filter(info => info instanceof Error );
     if (errors.length) {
@@ -90,14 +96,3 @@ async function processRssAsync(rssContent) {
     });
     return result;
 }
-
-// download the main index file of the podcast 
-
-// parse the content of the index file
-
-// for each url: 
-//      download url to the public file
-
-//      update the index file
-
-// save the index

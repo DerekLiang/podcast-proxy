@@ -3,6 +3,8 @@ const https = require('https');
 const http = require('http');
 const path = require('path');
 const URL = require('url');
+const util = require('node:util');
+const exec = util.promisify(require('node:child_process').exec);
 
 const TIMEOUT = 10000
 
@@ -17,7 +19,7 @@ module.exports = {
         return new Promise((resolve, reject) => {
             const request = pkg.get(uri.href).on('response', (res) => {
                 if (res.statusCode === 200) {
-                    const file = fs.createWriteStream(dest, { flags: 'wx' })
+                    const file = fs.createWriteStream(dest, { flags: 'w+' })
                     res
                         .on('end', () => {
                             file.end()
@@ -41,5 +43,18 @@ module.exports = {
                 reject(new Error(`Request timeout after ${TIMEOUT / 1000.0}s`))
             })
         })
+    },
+
+    compressAudioAsync: async function( srcLocalFullPathFileName) {  
+        try {
+            await exec(`lame --quiet --preset phone ${srcLocalFullPathFileName} ${this.toCompressedAudioFileName(srcLocalFullPathFileName)}`); 
+        }   catch (err) {
+            console.log('exception with ' + srcLocalFullPathFileName, err.message);
+            throw err;
+        }
+    },
+
+    toCompressedAudioFileName: function (filename, suffix='-phone') {
+        return filename.replace(/([.].*)$/, `${suffix}$1`)
     }
 }
