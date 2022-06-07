@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "download": "nodemon src/download.js",
     "dev": "nodemon src/index.js"
   },
   "author": "",

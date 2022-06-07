@@ -1,17 +1,17 @@
 # podcast proxy
 
-This is a simple podcast proxy that you can setup locally to serve as podcast proxy. The main purpose of this repo is to allow podcast client to bypass restrictions that imposed by the DNS based firewall.
+This is a simple podcast proxy that you can setup locally to serve as a private podcast feed. The main purpose of this repo is to allow podcast client to bypass restrictions that imposed by the DNS based firewall (Chinese Firewall).
 
+The program has been tested on Ubuntu 22.04, NodeJS 18. 
 
 ## Install dependence
-The program has been tested on Ubuntu 22.04. 
-```
+```sh
 sudo apt-get install -y lame
 ```
 
 Under the project folder install NPM packages by running `npm i`.
 
-## Confure
+## Configure
 Copy the `config.example.js` to `config.js` and update the configuration file based your setup.
 
 ```ts
@@ -32,9 +32,10 @@ module.exports = {
 
 ## Download
 
-Download the podcast to the public folder. you might want to configur it to run on schedule. Checkout the cron job.
+Download the podcast to the public folder. you might want to configur it to run on schedule.
 `npm run download` 
 
+For cron job, run `download.sh`
 
 ## Serve
 Serve the downloads in the public folder.

@@ -1,4 +1,4 @@
-const { readFile, readFileSync, writeFileSync, existsSync } = require('fs');
+const { readFile, readFileSync, writeFileSync, existsSync, rmSync } = require('fs');
 const path = require('path');
 const config = require("../config");
 const util = require("./util");
@@ -54,19 +54,22 @@ async function processRssAsync(rssContent) {
             console.log(`${index}-prepare downloading (${url})`);
             return {url, fullLocalPathFileName, fileName };
         })
-        .take(5)
+        .take(300)
         .mapAsync(async ({url, fileName, fullLocalPathFileName}, index) => {
 
-            if (existsSync(fullLocalPathFileName)) {
+            const compressedFullLocalPathFileName = util.toCompressedAudioFileName(fullLocalPathFileName);
+
+            if (existsSync(fullLocalPathFileName) || existsSync(compressedFullLocalPathFileName)) {
                 console.log(`  ${index}-skip downloading ${fullLocalPathFileName}`);
             } else {
                 console.log(`  ${index}-downloading (${fullLocalPathFileName})...`);
                 await util.downloadAsync(htmlEntity.decode(url), fullLocalPathFileName);                
             }            
-            if (!existsSync(util.toCompressedAudioFileName(fullLocalPathFileName))) {           
+            if (!existsSync(compressedFullLocalPathFileName)) {           
                 console.log(`  ${index}-compressing audio (${fullLocalPathFileName})...`);
                 await util.compressAudioAsync(fullLocalPathFileName);
             }
+            rmSync(fullLocalPathFileName, {force: true});   
             
             const result = { url, localUrl: `${config.public_host_name}${config.secret}/${util.toCompressedAudioFileName(fileName)}` };
             console.log(`  ${index}-result is (${result.localUrl})...`);          
