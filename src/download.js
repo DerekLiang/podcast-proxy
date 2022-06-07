@@ -54,7 +54,6 @@ async function processRssAsync(rssContent) {
             console.log(`${index}-prepare downloading (${url})`);
             return {url, fullLocalPathFileName, fileName };
         })
-        .take(300)
         .mapAsync(async ({url, fileName, fullLocalPathFileName}, index) => {
 
             const compressedFullLocalPathFileName = util.toCompressedAudioFileName(fullLocalPathFileName);
