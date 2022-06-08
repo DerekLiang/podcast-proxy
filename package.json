@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "download": "nodemon src/download.js",
-    "dev": "nodemon src/index.js"
+    "download": "node src/download.js",
+    "download-mon": "nodemon src/download.js",
+    "dev": "node src/index.js",
+    "dev-mon": "nodemon src/index.js"
   },
   "author": "",
   "license": "ISC",
@@ -15,9 +17,7 @@
   },
   "devDependencies": {
     "alot": "^0.3.0",
-    "content-range": "^2.0.2",
     "html-entities": "^2.3.3",
-    "log4js": "^6.5.2",
     "nodemon": "^2.0.16",
     "sha1": "^1.1.1"
   },

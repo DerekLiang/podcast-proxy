@@ -45,9 +45,9 @@ module.exports = {
         })
     },
 
-    compressAudioAsync: async function( srcLocalFullPathFileName) {  
+    compressAudioAsync: async function( srcLocalFullPathFileName, suffix) {
         try {
-            await exec(`lame --quiet --preset phone ${srcLocalFullPathFileName} ${this.toCompressedAudioFileName(srcLocalFullPathFileName)}`); 
+            await exec(`lame --quiet --preset phone ${srcLocalFullPathFileName} ${srcLocalFullPathFileName}${suffix}`);
         }   catch (err) {
             console.log('exception with ' + srcLocalFullPathFileName, err.message);
             throw err;

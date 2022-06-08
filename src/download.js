@@ -1,4 +1,4 @@
-const { readFile, readFileSync, writeFileSync, existsSync, rmSync } = require('fs');
+const { readFileSync, writeFileSync, rmSync, promises: fsPromises, existsSync } = require('fs');
 const path = require('path');
 const config = require("../config");
 const util = require("./util");
@@ -8,6 +8,7 @@ const alot = require('alot');
 const sha1 = require('sha1');
 
 const publicPath = path.join(__dirname, config.public_folder);
+const cpuCores = require("os").cpus().length;
 
 const index_rss_filename = path.join(publicPath, 'index.rss');
 
@@ -33,7 +34,7 @@ async function processRssAsync(rssContent) {
 
     let urls = [];
 
-    // first path gather all the URLs 
+    // first path gather all the URLs
     rssContent.replace(regex, (match, url) => {
         try {
             urls.push(url);
@@ -48,41 +49,46 @@ async function processRssAsync(rssContent) {
     const downloadInfo = await alot(urls)
         .distinct()
         .filter(url => url.indexOf('.mp3?') >=0)
-        .map((url, index) => { 
-            const fileName = sha1(url+config.secret) + '.mp3';
+        .map((url, index) => {
+            const fileName = sha1(url+config.podcast.secret ?? '') + '.mp3';
             const fullLocalPathFileName = path.join(publicPath, fileName) ;
             console.log(`${index}-prepare downloading (${url})`);
             return {url, fullLocalPathFileName, fileName };
         })
+        // .take(155)   // limit how much to process
         .mapAsync(async ({url, fileName, fullLocalPathFileName}, index) => {
 
-            const compressedFullLocalPathFileName = util.toCompressedAudioFileName(fullLocalPathFileName);
+            rmSync(fullLocalPathFileName, {force: true});
+            const compressedAudioFileFullPathFileName = util.toCompressedAudioFileName(fullLocalPathFileName);
 
-            if (existsSync(fullLocalPathFileName) || existsSync(compressedFullLocalPathFileName)) {
-                console.log(`  ${index}-skip downloading ${fullLocalPathFileName}`);
-            } else {
+            if (!existsSync(compressedAudioFileFullPathFileName)) {
+
                 console.log(`  ${index}-downloading (${fullLocalPathFileName})...`);
-                await util.downloadAsync(htmlEntity.decode(url), fullLocalPathFileName);                
-            }            
-            if (!existsSync(compressedFullLocalPathFileName)) {           
+                await util.downloadAsync(htmlEntity.decode(url), fullLocalPathFileName);
+
+                const suffixForFilename = '_compress';
                 console.log(`  ${index}-compressing audio (${fullLocalPathFileName})...`);
-                await util.compressAudioAsync(fullLocalPathFileName);
+                await util.compressAudioAsync(fullLocalPathFileName, suffixForFilename);
+
+                console.log(`  ${index}-rename compressing audio (${fullLocalPathFileName})...`);
+                await fsPromises.rename(fullLocalPathFileName + suffixForFilename, compressedAudioFileFullPathFileName);
+
+                rmSync(fullLocalPathFileName, {force: true});
             }
-            rmSync(fullLocalPathFileName, {force: true});   
-            
+
             const result = { url, localUrl: `${config.public_host_name}${config.secret}/${util.toCompressedAudioFileName(fileName)}` };
-            console.log(`  ${index}-result is (${result.localUrl})...`);          
+            console.log(`  ${index}-result is (${result.localUrl})...`);
             return result;
         })
-        .toArrayAsync({threads: 5, errors: 'ignore'});
-    
+        .toArrayAsync({threads: cpuCores+1, errors: 'ignore'});
+
     const errors = downloadInfo.filter(info => info instanceof Error );
     if (errors.length) {
         console.error(`there are errors occurred while processing URLs. Totoal error ${errors.length}/${downloadInfo.length}`);
         errors.forEach(err => {
             console.error(err);
         })
-        console.error('--- end of error list ----');        
+        console.error('--- end of error list ----');
     } else {
         console.log(`processing URLs successfully. Total is: ${downloadInfo.length}`);
     }
@@ -91,7 +97,7 @@ async function processRssAsync(rssContent) {
     const urlToActualUrlMap = alot(downloadInfo)
         .filter(info => !(info instanceof Error ))
         .toDictionary(urlInfo => urlInfo.url, urlInfo => urlInfo.localUrl);
-        
+
     // replace with the actual url
     const result = rssContent.replace(regex, (match, url) => {
         return urlToActualUrlMap[url] || url;

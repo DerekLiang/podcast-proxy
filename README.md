@@ -2,7 +2,7 @@
 
 This is a simple podcast proxy that you can setup locally to serve as a private podcast feed. The main purpose of this repo is to allow podcast client to bypass restrictions that imposed by the DNS based firewall (Chinese Firewall).
 
-The program has been tested on Ubuntu 22.04, NodeJS 18. 
+The program has been tested on Ubuntu 22.04, NodeJS 18.
 
 ## Install dependence
 ```sh
@@ -19,9 +19,9 @@ module.exports = {
    public_host_name: 'http://8.8.8.8',  // your public IP address
    public_folder:'public_downlaod',     // folder that store the downloaded files
    secret: '/you-secret', // your secret, serve as password in the URL
-   podcast: {       
+   podcast: {
        // in order to differentiate from the original podcast, we change the title,
-       replaceTexts: [{from: /<title>Ask/g, to: '<title>P-Ask'}], 
+       replaceTexts: [{from: /<title>Ask/g, to: '<title>P-Ask'}],
        // your podcast information, you should have access to <host><url>
        host: 'https://www.patreon.com',
        url: '/rss/askspaceman?auth=kd99kd09ka93i093',
@@ -33,9 +33,11 @@ module.exports = {
 ## Download
 
 Download the podcast to the public folder. you might want to configur it to run on schedule.
-`npm run download` 
+`npm run download`
 
 For cron job, run `download.sh`
+
+On the first run, the number of donwloads can be limited by uncommenting the line `.take(150)`.
 
 ## Serve
 Serve the downloads in the public folder.
@@ -43,4 +45,3 @@ Serve the downloads in the public folder.
 
 ## Test
 You can now test by point your podcast to `<public_host_name><secret>`. Using the configuration in the example, it will be `http://8.8.8.8//you-secret`.
-
