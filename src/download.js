@@ -9,6 +9,7 @@ const sha1 = require('sha1');
 
 const publicPath = path.join(__dirname, config.public_folder);
 const cpuCores = require("os").cpus().length;
+const startTime = Date.now()/1000;
 
 const index_rss_filename = path.join(publicPath, 'index.rss');
 
@@ -60,8 +61,9 @@ async function processRssAsync(rssContent) {
 
             rmSync(fullLocalPathFileName, {force: true});
             const compressedAudioFileFullPathFileName = util.toCompressedAudioFileName(fullLocalPathFileName);
+            let hasDownloaded = existsSync(compressedAudioFileFullPathFileName);
 
-            if (!existsSync(compressedAudioFileFullPathFileName)) {
+            if (!hasDownloaded) {
 
                 console.log(`  ${index}-downloading (${fullLocalPathFileName})...`);
                 await util.downloadAsync(htmlEntity.decode(url), fullLocalPathFileName);
@@ -76,7 +78,7 @@ async function processRssAsync(rssContent) {
                 rmSync(fullLocalPathFileName, {force: true});
             }
 
-            const result = { url, localUrl: `${config.public_host_name}${config.secret}/${util.toCompressedAudioFileName(fileName)}` };
+            const result = { url, localUrl: `${config.public_host_name}${config.secret}/${util.toCompressedAudioFileName(fileName)}`, hasDownloaded };
             console.log(`  ${index}-result is (${result.localUrl})...`);
             return result;
         })
@@ -90,7 +92,11 @@ async function processRssAsync(rssContent) {
         })
         console.error('--- end of error list ----');
     } else {
-        console.log(`processing URLs successfully. Total is: ${downloadInfo.length}`);
+        const endTime = Date.now()/1000;
+        console.log(`Summary:`);
+        const actualDownloadCount = downloadInfo.filter(d => d.hasDownloaded === true).length - downloadInfo.length;
+        console.log(`  processing URLs successfully. Total downloading is: ${actualDownloadCount}/${downloadInfo.length}`);
+        console.log(`  time spent in seconds: ${endTime - startTime}`);
     }
 
     // for fast lookup
