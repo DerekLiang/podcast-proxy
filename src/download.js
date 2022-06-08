@@ -85,19 +85,19 @@ async function processRssAsync(rssContent) {
         .toArrayAsync({threads: cpuCores+1, errors: 'ignore'});
 
     const errors = downloadInfo.filter(info => info instanceof Error );
+    console.log(`Summary:`);
     if (errors.length) {
-        console.error(`there are errors occurred while processing URLs. Totoal error ${errors.length}/${downloadInfo.length}`);
+        console.error(`  There are errors occurred while processing URLs. Totoal error is: ${errors.length}/${downloadInfo.length}`);
         errors.forEach(err => {
             console.error(err);
         })
-        console.error('--- end of error list ----');
-    } else {
-        const endTime = Date.now()/1000;
-        console.log(`Summary:`);
-        const actualDownloadCount = downloadInfo.filter(d => d.hasDownloaded === true).length - downloadInfo.length;
-        console.log(`  processing URLs successfully. Total downloading is: ${actualDownloadCount}/${downloadInfo.length}`);
-        console.log(`  time spent in seconds: ${endTime - startTime}`);
+        console.error('  --- end of error list ----');
     }
+
+    const endTime = Date.now()/1000;
+    const actualDownloadCount = downloadInfo.filter(info => info.hasDownloaded === true && !(info instanceof Error)).length - downloadInfo.length - errors.length;
+    console.log(`  processing URLs successfully. Total downloading is: ${actualDownloadCount}/${downloadInfo.length}`);
+    console.log(`  time spent in seconds: ${endTime - startTime}`);
 
     // for fast lookup
     const urlToActualUrlMap = alot(downloadInfo)
