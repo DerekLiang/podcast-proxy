@@ -97,7 +97,7 @@ async function processRssAsync(rssContent) {
     const endTime = Date.now()/1000;
     const actualDownloadCount = downloadInfo.filter(info => info.hasDownloaded === true && !(info instanceof Error)).length - downloadInfo.length - errors.length;
     console.log(`  processing URLs successfully. Total downloading is: ${actualDownloadCount}/${downloadInfo.length}`);
-    console.log(`  time spent in seconds: ${endTime - startTime}`);
+    console.log(`  time spent in seconds: ${Math.floor(endTime - startTime)}`);
 
     // for fast lookup
     const urlToActualUrlMap = alot(downloadInfo)
