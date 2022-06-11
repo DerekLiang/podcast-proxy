@@ -25,7 +25,11 @@ async function main()
 
     const replacedContent = (config.podcast.replaceTexts || []).reduce((acc, {from, to}) => acc.replace(from, to), rssContentProcessed);
 
-    writeFileSync(index_rss_filename + '.bak', replacedContent, { encoding: 'utf-8'});
+    const newIndexRssFilename = index_rss_filename + '.bak';
+
+    rmSync(newIndexRssFilename, {force: true});
+
+    writeFileSync(newIndexRssFilename, replacedContent, { encoding: 'utf-8' });
 }
 
 main()
