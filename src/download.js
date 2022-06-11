@@ -95,8 +95,11 @@ async function processRssAsync(rssContent) {
     }
 
     const endTime = Date.now()/1000;
-    const actualDownloadCount = downloadInfo.filter(info => info.hasDownloaded === true && !(info instanceof Error)).length - downloadInfo.length - errors.length;
-    console.log(`  processing URLs successfully. Total downloading is: ${actualDownloadCount}/${downloadInfo.length}`);
+    const successDownloadCount =
+    downloadInfo.length
+        - downloadInfo.filter(info => info.hasDownloaded === true && !(info instanceof Error)).length // has been already downloaded
+        - errors.length;                                                                              // has downloaded unsuccessfully
+    console.log(`  processing URLs successfully. Total downloading is: ${successDownloadCount}/${downloadInfo.length}`);
     console.log(`  time spent in seconds: ${Math.floor(endTime - startTime)}`);
 
     // for fast lookup
