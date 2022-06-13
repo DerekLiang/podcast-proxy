@@ -10,6 +10,7 @@ function setCustomCacheControl(res, path) {
   if (path.match(/[.]rss/)) {
     console.log('set index rss header')
     res.setHeader('content-type', 'application/rss+xml; charset=utf-8');
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:4200');
   }
 }
 
