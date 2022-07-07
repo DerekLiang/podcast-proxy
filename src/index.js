@@ -1,7 +1,10 @@
-const express = require('express');
-const path = require('path');
-const config = require("../config");
+import express from 'express';
+import path from 'path';
+import {config} from "../config.js";
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const publicPath = path.join(__dirname, config.public_folder);
 
 const app = express();

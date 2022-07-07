@@ -1,20 +1,23 @@
+import { readFileSync, writeFileSync } from 'fs';
 
-let file_name = '';
-let cache = {};
+let _file_name = '';
+let _cache = {};
 
-module.exports ={
+export const cache = {
     init: (filename) => {
-         file_name = filename;
+        _file_name = filename;
         try {
-            cache = JSON.parse(readFileSync(cache_file, {encoding: 'utf-8'}));
-        } catch {}
+            _cache = JSON.parse(readFileSync(_file_name, { encoding: 'utf-8' }));
+        } catch { };
+        _cache = {};
     },
+
     add: (key, value) => {
-        cache[key] = value;
+        _cache[key] = value;
+        writeFileSync(_file_name, JSON.stringify(_cache), { encoding: 'utf-8' });
     },
 
     get: (key) => {
-        writeFileSync(file_name, JSON.stringify(cache), {encoding: 'utf-8'});
-        return cache[key];
-    },
-}
+        return _cache[key];
+    }
+};

@@ -1,16 +1,23 @@
-const { readFileSync, writeFileSync, rmSync, promises: fsPromises, existsSync } = require('fs');
-const path = require('path');
-const config = require("../config");
-const util = require("./util");
+import { readFileSync, writeFileSync, rmSync, promises as fsPromises, existsSync } from 'fs';
+import path from 'path';
+import { cache } from './cache.js';
+import { config } from "../config.js";
+import { util } from "./util.js";
 console.log("config:", config);
-const htmlEntity = require('html-entities');
-const alot = require('alot');
-const sha1 = require('sha1');
-const sha1File = require('sha1-file');
-const cache = require('./cache');
+import htmlEntity from 'html-entities';
+import alot from 'alot';
+import sha1 from 'sha1';
+import os from "os";
+import { sha1File } from 'sha1-file';
 
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const publicPath = path.join(__dirname, config.public_folder);
-const cpuCores = require("os").cpus().length;
+const cache_file = path.join(__dirname, config.cache_file);
+const cpuCores =os.cpus().length;
+
 const startTime = Date.now()/1000;
 
 const index_rss_filename = path.join(publicPath, 'index.rss');
@@ -21,11 +28,11 @@ async function main()
 
     const rssContent = readFileSync(index_rss_filename, { encoding: 'utf-8'});
 
-    cache.init(config.cache_file);
+    cache.init(cache_file);
 
     console.log('rss content:', rssContent.substring(0,550));
 
-    const rssContentProcessed = await processRssAsync(rssContent, cache_for_files);
+    const rssContentProcessed = await processRssAsync(rssContent);
 
     const replacedContent = (config.podcast.replaceTexts || []).reduce((acc, {from, to}) => acc.replace(from, to), rssContentProcessed);
 
@@ -65,7 +72,7 @@ async function processRssAsync(rssContent) {
             console.log(`${index}-prepare downloading (${url})`);
             return {url, fullLocalPathFileName };
         })
-        // .take(155)   // limit how much to process
+        .take(155)   // limit how much to process
         .mapAsync(async ({url, fullLocalPathFileName}, index) => {
 
             rmSync(fullLocalPathFileName, {force: true});

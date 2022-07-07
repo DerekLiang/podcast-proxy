@@ -1,4 +1,4 @@
-module.exports = {
+export const config = {
    public_host_name: 'http://8.8.8.8',  // your public IP address
    public_folder:'public_downlaod',     // folder that store the downloaded files
    secret: '/you-secret', // your secret, serve as password in the URL

@@ -1,14 +1,15 @@
-const fs = require('fs');
-const https = require('https');
-const http = require('http');
-const path = require('path');
-const URL = require('url');
-const util = require('node:util');
-const exec = util.promisify(require('node:child_process').exec);
+import fs from 'fs';
+import https from 'https';
+import http from 'http';
+import path from 'path';
+import URL from 'url';
+import u from 'node:util';
+import c from 'node:child_process';
+const exec = u.promisify(c.exec);
 
-const TIMEOUT = 10000
+const TIMEOUT = 10000;
 
-module.exports = {
+export const util = {
     downloadAsync: function (url, dest) {
         const uri = new URL.URL(url)
         if (!dest) {
