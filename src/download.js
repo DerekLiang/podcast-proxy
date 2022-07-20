@@ -72,12 +72,14 @@ async function processRssAsync(rssContent) {
             console.log(`${index}-prepare downloading (${url})`);
             return {url, fullLocalPathFileName };
         })
-        .take(155)   // limit how much to process
+        .take(config.max_download)   // limit how much to process
         .mapAsync(async ({url, fullLocalPathFileName}, index) => {
+            let actualUrl = url.split('?')[0];
 
             rmSync(fullLocalPathFileName, {force: true});
             let hasDownloaded = true;   // true if file has already downloaded.
-            if (!cache.get(url)) {
+            let sha1FullLocalFileName = cache.get(actualUrl);
+            if (!existsSync(sha1FullLocalFileName)) {
                 hasDownloaded = false;
 
                 console.log(`  ${index}-downloading (${fullLocalPathFileName})...`);
@@ -89,19 +91,20 @@ async function processRssAsync(rssContent) {
 
                 const compressed_filename = fullLocalPathFileName + suffixForFilename;
                 let sha1 = await sha1File(compressed_filename);
-                let sha1FullLocalFileName = path.join(publicPath, `${sha1}-phone.mp3`);
+                sha1FullLocalFileName = path.join(publicPath, `${sha1}-phone.mp3`);
 
                 console.log(`  ${index}-rename compressing audio (${fullLocalPathFileName})...`);
 
                 rmSync(sha1FullLocalFileName, {force: true});
                 await fsPromises.rename(compressed_filename, sha1FullLocalFileName);
 
-                cache.add(url, sha1FullLocalFileName);
+                cache.add(actualUrl, sha1FullLocalFileName);
                 rmSync(fullLocalPathFileName, {force: true});
-                console.log(`  ${index}-rename compressing audio (${fullLocalPathFileName}) success`);
+                console.log(`  ${index}-rename compressing audio (${fullLocalPathFileName}) to (${sha1FullLocalFileName}) success`);
             }
+            let filename = sha1FullLocalFileName.replace(/.*\//g, ''); // get all char after final '/'
 
-            const result = { url, localUrl: `${config.public_host_name}${config.secret}/${cache.get(url)}`, hasDownloaded };
+            const result = { url, localUrl: `${config.public_host_name}${config.secret}/${filename}`, hasDownloaded };
             console.log(`  ${index}-result is (${result.localUrl})...`);
             return result;
         })
